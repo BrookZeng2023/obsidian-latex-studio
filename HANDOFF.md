@@ -13,6 +13,7 @@ Build an open-source desktop Obsidian plugin for complete LaTeX projects with an
 - Verified artifacts: a PDF 1.5 file (15 KB) and a gzip SyncTeX map (1.0 KB).
 - An isolated test vault is installed at `/Users/brook/Brook/Local/obsidian-latex-studio-test-vault`; its sample compiled to a valid 16 KB PDF and 1.4 KB SyncTeX map.
 - English and Simplified Chinese README files are present.
+- Version 0.1.1 addresses automated review feedback: declarative settings search, stricter compiler error typing, removal of `builtin-modules`, a contribution guide, and an attested GitHub Actions release workflow.
 
 ## Assumptions
 
@@ -25,7 +26,7 @@ Build an open-source desktop Obsidian plugin for complete LaTeX projects with an
 1. Perform an Obsidian UI acceptance test in the installed test vault.
 2. Implement root-file directives and multi-file dependency watching.
 3. Implement a dedicated build-log/diagnostics pane and SyncTeX navigation.
-4. Add Windows/Linux CI and package the first release.
+4. Add Windows/Linux compilation acceptance tests.
 
 ## Corrections and reflections
 

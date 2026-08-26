@@ -1,4 +1,4 @@
-import { App, PluginSettingTab, Setting } from "obsidian";
+import { App, PluginSettingTab, Setting, type SettingDefinitionItem } from "obsidian";
 import type LatexStudioPlugin from "./main";
 import type { LatexStudioSettings } from "./types";
 
@@ -53,6 +53,78 @@ export class LatexStudioSettingTab extends PluginSettingTab {
         }));
   }
 
+  getSettingDefinitions(): SettingDefinitionItem[] {
+    return [
+      {
+        name: "Compiler engine",
+        desc: "Auto tries latexmk first, then Tectonic if latexmk is unavailable.",
+        control: {
+          type: "dropdown",
+          key: "engine",
+          options: { auto: "Auto", latexmk: "latexmk", tectonic: "Tectonic" },
+          defaultValue: DEFAULT_SETTINGS.engine
+        }
+      },
+      {
+        name: "latexmk executable",
+        desc: "Use a command on PATH or an absolute executable path.",
+        control: {
+          type: "text",
+          key: "latexmkPath",
+          placeholder: "latexmk",
+          defaultValue: DEFAULT_SETTINGS.latexmkPath
+        }
+      },
+      {
+        name: "Tectonic executable",
+        desc: "Use a command on PATH or an absolute executable path.",
+        control: {
+          type: "text",
+          key: "tectonicPath",
+          placeholder: "tectonic",
+          defaultValue: DEFAULT_SETTINGS.tectonicPath
+        }
+      },
+      {
+        name: "Compile on save",
+        control: {
+          type: "toggle",
+          key: "compileOnSave",
+          defaultValue: DEFAULT_SETTINGS.compileOnSave
+        }
+      },
+      {
+        name: "Open PDF after compilation",
+        control: {
+          type: "toggle",
+          key: "openPdfAfterCompile",
+          defaultValue: DEFAULT_SETTINGS.openPdfAfterCompile
+        }
+      }
+    ];
+  }
+
+  getControlValue(key: string): unknown {
+    if (isSettingsKey(key)) return this.plugin.settings[key];
+    return undefined;
+  }
+
+  async setControlValue(key: string, value: unknown): Promise<void> {
+    if (!isSettingsKey(key)) return;
+
+    if (key === "engine" && (value === "auto" || value === "latexmk" || value === "tectonic")) {
+      this.plugin.settings.engine = value;
+    } else if ((key === "latexmkPath" || key === "tectonicPath") && typeof value === "string") {
+      this.plugin.settings[key] = value.trim() || DEFAULT_SETTINGS[key];
+    } else if ((key === "compileOnSave" || key === "openPdfAfterCompile") && typeof value === "boolean") {
+      this.plugin.settings[key] = value;
+    } else {
+      return;
+    }
+
+    await this.plugin.saveSettings();
+  }
+
   private addTextSetting(
     name: string,
     key: "latexmkPath" | "tectonicPath",
@@ -69,4 +141,8 @@ export class LatexStudioSettingTab extends PluginSettingTab {
           await this.plugin.saveSettings();
         }));
   }
+}
+
+function isSettingsKey(key: string): key is keyof LatexStudioSettings {
+  return key in DEFAULT_SETTINGS;
 }

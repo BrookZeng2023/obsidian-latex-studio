@@ -1,11 +1,20 @@
-import { execFile } from "node:child_process";
+import { execFile, type ExecFileException } from "node:child_process";
 import path from "node:path";
-import { promisify } from "node:util";
 import { parseDiagnostics } from "./diagnostics";
 import type { CompileResult, EngineKind, LatexStudioSettings } from "./types";
 
-const execFileAsync = promisify(execFile);
 const MAX_LOG_BYTES = 4 * 1024 * 1024;
+
+interface ExecOutput {
+  stdout: string;
+  stderr: string;
+}
+
+interface CompilerError extends Error {
+  code?: string | number | null;
+  stdout?: string;
+  stderr?: string;
+}
 
 interface CommandSpec {
   engine: Exclude<EngineKind, "auto">;
@@ -26,13 +35,7 @@ export async function compileLatex(
 
   for (const command of candidates) {
     try {
-      const { stdout, stderr } = await execFileAsync(command.executable, command.args, {
-        cwd: workingDirectory,
-        encoding: "utf8",
-        maxBuffer: MAX_LOG_BYTES,
-        timeout: 120_000,
-        windowsHide: true
-      });
+      const { stdout, stderr } = await runCompiler(command, workingDirectory);
       const log = `${stdout}\n${stderr}`.trim();
       return {
         ok: true,
@@ -71,7 +74,7 @@ function commandCandidates(fileName: string, settings: LatexStudioSettings): Com
 }
 
 function isMissingExecutable(error: unknown): boolean {
-  return typeof error === "object" && error !== null && "code" in error && error.code === "ENOENT";
+  return isCompilerError(error) && error.code === "ENOENT";
 }
 
 function failureResult(
@@ -92,7 +95,29 @@ function failureResult(
 }
 
 function getErrorText(error: unknown, key: "stdout" | "stderr"): string {
-  if (typeof error !== "object" || error === null || !(key in error)) return "";
-  const value = (error as Record<string, unknown>)[key];
-  return typeof value === "string" ? value : "";
+  if (!isCompilerError(error)) return "";
+  return error[key] ?? "";
+}
+
+function isCompilerError(error: unknown): error is CompilerError {
+  return error instanceof Error;
+}
+
+function runCompiler(command: CommandSpec, workingDirectory: string): Promise<ExecOutput> {
+  return new Promise((resolve, reject: (reason: CompilerError) => void) => {
+    execFile(command.executable, command.args, {
+      cwd: workingDirectory,
+      encoding: "utf8",
+      maxBuffer: MAX_LOG_BYTES,
+      timeout: 120_000,
+      windowsHide: true
+    }, (error: ExecFileException | null, stdout: string, stderr: string) => {
+      if (error) {
+        const compilerError: CompilerError = Object.assign(error, { stdout, stderr });
+        reject(compilerError);
+        return;
+      }
+      resolve({ stdout, stderr });
+    });
+  });
 }
