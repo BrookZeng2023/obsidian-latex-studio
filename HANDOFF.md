@@ -16,6 +16,7 @@ Build an open-source desktop Obsidian plugin for complete LaTeX projects with an
 - Version 0.1.1 addresses automated review feedback: declarative settings search, stricter compiler error typing, removal of `builtin-modules`, a contribution guide, and an attested GitHub Actions release workflow.
 - Version 0.2.0 adds an Overleaf-style workspace: one reusable right-hand PDF pane, debounced live refresh, and an explicit preview toggle command/button.
 - Version 0.2.1 uses Obsidian's native PDF reader, shows compile status, and moves intermediate files into a hidden `.latex-studio` build directory while keeping the final PDF beside the source.
+- Version 0.2.2 optimizes live preview with a 2.5-second idle delay, unchanged-source skipping, one-slot compile coalescing, and non-disruptive refresh of an already-open native PDF pane.
 
 ## Assumptions
 

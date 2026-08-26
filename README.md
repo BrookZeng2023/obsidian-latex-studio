@@ -38,6 +38,8 @@ Then enable **LaTeX Studio** under Obsidian community plugins and open a `.tex` 
 
 Use the panel button in the LaTeX editor toolbar, or run **Toggle PDF preview** from the command palette, to open or close the right-hand PDF pane. When compile-on-save is enabled, editing pauses briefly before recompiling and refreshing that same pane.
 
+Live preview waits until typing stops, skips unchanged sources, and coalesces edits made during a running build into one follow-up compile. The native PDF pane stays open so its page and zoom state are not reset unnecessarily. Manual **Compile** always requests a fresh full build.
+
 ## Security model
 
 Compilation runs local executables without a shell. LaTeX itself can still read files permitted by the selected engine and template. Only compile projects you trust, and do not enable shell escape unless you understand the consequences.

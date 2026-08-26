@@ -7,7 +7,7 @@ export const DEFAULT_SETTINGS: LatexStudioSettings = {
   latexmkPath: "latexmk",
   tectonicPath: "tectonic",
   compileOnSave: true,
-  compileDebounceMs: 700,
+  compileDebounceMs: 2500,
   openPdfAfterCompile: true
 };
 
@@ -36,10 +36,23 @@ export class LatexStudioSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName("Compile on save")
+      .setDesc("Waits until typing stops, then compiles only when the source changed.")
       .addToggle((toggle) => toggle
         .setValue(this.plugin.settings.compileOnSave)
         .onChange(async (value) => {
           this.plugin.settings.compileOnSave = value;
+          await this.plugin.saveSettings();
+        }));
+
+    new Setting(containerEl)
+      .setName("Live preview delay")
+      .setDesc("Longer delays avoid repeatedly compiling while you are still typing.")
+      .addSlider((slider) => slider
+        .setLimits(500, 5000, 250)
+        .setDynamicTooltip()
+        .setValue(this.plugin.settings.compileDebounceMs)
+        .onChange(async (value) => {
+          this.plugin.settings.compileDebounceMs = value;
           await this.plugin.saveSettings();
         }));
 
@@ -87,10 +100,24 @@ export class LatexStudioSettingTab extends PluginSettingTab {
       },
       {
         name: "Compile on save",
+        desc: "Waits until typing stops, then compiles only when the source changed.",
         control: {
           type: "toggle",
           key: "compileOnSave",
           defaultValue: DEFAULT_SETTINGS.compileOnSave
+        }
+      },
+      {
+        name: "Live preview delay",
+        desc: "Longer delays avoid repeatedly compiling while you are still typing.",
+        control: {
+          type: "slider",
+          key: "compileDebounceMs",
+          min: 500,
+          max: 5000,
+          step: 250,
+          defaultValue: DEFAULT_SETTINGS.compileDebounceMs,
+          displayFormat: (value) => `${(value / 1000).toFixed(2)}s`
         }
       },
       {
@@ -116,6 +143,8 @@ export class LatexStudioSettingTab extends PluginSettingTab {
       this.plugin.settings.engine = value;
     } else if ((key === "latexmkPath" || key === "tectonicPath") && typeof value === "string") {
       this.plugin.settings[key] = value.trim() || DEFAULT_SETTINGS[key];
+    } else if (key === "compileDebounceMs" && typeof value === "number" && Number.isFinite(value)) {
+      this.plugin.settings.compileDebounceMs = Math.max(500, Math.min(5000, value));
     } else if ((key === "compileOnSave" || key === "openPdfAfterCompile") && typeof value === "boolean") {
       this.plugin.settings[key] = value;
     } else {

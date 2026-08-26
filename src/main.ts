@@ -8,6 +8,8 @@ import type { CompileResult, LatexStudioSettings } from "./types";
 export default class LatexStudioPlugin extends Plugin {
   settings: LatexStudioSettings = DEFAULT_SETTINGS;
   private compiling = new Set<string>();
+  private lastCompiledSource = new Map<string, string>();
+  private pendingCompile = new Map<string, { view: LatexEditorView; source: string }>();
   private latestPdfPath: string | null = null;
   private pdfLeaf: WorkspaceLeaf | null = null;
   private openingPdfLeaf: Promise<WorkspaceLeaf> | null = null;
@@ -51,7 +53,7 @@ export default class LatexStudioPlugin extends Plugin {
     await view.save();
     const file = view.file;
     if (!file) return;
-    await this.compileFile(file, view, quiet);
+    await this.compileFile(file, view, quiet, view.getViewData());
   }
 
   async togglePdfPreview(sourceView?: LatexEditorView): Promise<void> {
@@ -79,9 +81,24 @@ export default class LatexStudioPlugin extends Plugin {
     await this.compileView(view);
   }
 
-  private async compileFile(file: TFile, view: LatexEditorView, quiet: boolean): Promise<void> {
+  private async compileFile(
+    file: TFile,
+    view: LatexEditorView,
+    quiet: boolean,
+    source: string
+  ): Promise<void> {
+    if (quiet && this.lastCompiledSource.get(file.path) === source) {
+      this.setStatus("LaTeX up to date");
+      return;
+    }
     if (this.compiling.has(file.path)) {
-      if (!quiet) new Notice(`${file.name} is already compiling.`);
+      if (quiet) {
+        this.pendingCompile.set(file.path, { view, source });
+        this.setStatus("Changes queued");
+      } else {
+        new Notice(`${file.name} is already compiling; latest changes are queued.`);
+        this.pendingCompile.set(file.path, { view, source });
+      }
       return;
     }
     const adapter = this.app.vault.adapter;
@@ -96,8 +113,14 @@ export default class LatexStudioPlugin extends Plugin {
     try {
       const result = await compileLatex(adapter.getFullPath(file.path), this.settings);
       await this.reportResult(result, view, adapter, quiet);
+      if (result.ok) this.lastCompiledSource.set(file.path, source);
     } finally {
       this.compiling.delete(file.path);
+      const pending = this.pendingCompile.get(file.path);
+      this.pendingCompile.delete(file.path);
+      if (pending && pending.source !== this.lastCompiledSource.get(file.path)) {
+        void this.compileFile(file, pending.view, true, pending.source);
+      }
     }
   }
 
@@ -128,6 +151,10 @@ export default class LatexStudioPlugin extends Plugin {
     const pdfFile = await this.waitForPdf(relativePdfPath);
     if (!pdfFile) {
       new Notice("PDF was compiled, but Obsidian has not indexed it yet. Try Toggle PDF preview again.");
+      return;
+    }
+    if (this.pdfLeaf?.getViewState().state?.file === relativePdfPath) {
+      this.app.workspace.revealLeaf(this.pdfLeaf);
       return;
     }
     if (!this.openingPdfLeaf) {
