@@ -1,0 +1,27 @@
+{
+  "name": "obsidian-latex-studio",
+  "version": "0.1.0",
+  "description": "A complete LaTeX project editor and PDF preview for Obsidian.",
+  "type": "module",
+  "scripts": {
+    "build": "node esbuild.config.mjs production",
+    "dev": "node esbuild.config.mjs",
+    "test": "vitest run",
+    "check": "tsc --noEmit && npm test && npm run build"
+  },
+  "keywords": ["obsidian", "latex", "pdf", "tectonic", "latexmk"],
+  "license": "MIT",
+  "devDependencies": {
+    "@codemirror/language": "^6.11.3",
+    "@codemirror/legacy-modes": "^6.5.1",
+    "@codemirror/state": "6.5.0",
+    "@codemirror/view": "6.38.6",
+    "@types/node": "^24.3.0",
+    "builtin-modules": "^5.0.0",
+    "codemirror": "^6.0.2",
+    "esbuild": "^0.25.9",
+    "obsidian": "1.13.1",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  }
+}
