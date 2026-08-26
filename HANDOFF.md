@@ -14,6 +14,7 @@ Build an open-source desktop Obsidian plugin for complete LaTeX projects with an
 - An isolated test vault is installed at `/Users/brook/Brook/Local/obsidian-latex-studio-test-vault`; its sample compiled to a valid 16 KB PDF and 1.4 KB SyncTeX map.
 - English and Simplified Chinese README files are present.
 - Version 0.1.1 addresses automated review feedback: declarative settings search, stricter compiler error typing, removal of `builtin-modules`, a contribution guide, and an attested GitHub Actions release workflow.
+- Version 0.2.0 adds an Overleaf-style workspace: one reusable right-hand PDF pane, debounced live refresh, and an explicit preview toggle command/button.
 
 ## Assumptions
 

@@ -9,7 +9,8 @@ LaTeX Studio 把 Obsidian 桌面版变成一个轻量 LaTeX 工作环境。它�
 - 使用 CodeMirror 6 编辑完整 LaTeX 源文件并提供语法高亮
 - 支持 `latexmk` 和 Tectonic，自动模式会优先尝试 `latexmk`
 - 支持命令面板、侧边栏按钮和保存后自动编译
-- 编译成功后在 Obsidian 分栏中打开或刷新 PDF
+- 提供类似 Overleaf 的左侧源码、右侧实时 PDF 工作区，并始终复用同一个预览分栏
+- 可通过编辑器按钮或“Toggle PDF preview”命令随时打开、关闭右侧 PDF
 - 解析编译错误并跳转到第一个错误行
 - 生成 SyncTeX 文件，为后续正向和反向定位预留基础
 
@@ -45,6 +46,7 @@ LaTeX Studio 把 Obsidian 桌面版变成一个轻量 LaTeX 工作环境。它�
 - 点击左侧 Sigma 图标编译当前 LaTeX 文档。
 - 或打开命令面板，执行“Compile active LaTeX document”。
 - 默认保存 `.tex` 文件后会自动编译，并在右侧显示 PDF。
+- 编辑器工具栏中的分栏按钮可以打开或关闭右侧 PDF；启用自动编译时，停止输入片刻后会重新编译并刷新同一预览。
 - 可以在插件设置中选择 `Auto`、`latexmk` 或 `Tectonic`，也可以填写编译器绝对路径。
 
 ## 本地开发

@@ -9,7 +9,8 @@ LaTeX Studio turns an Obsidian desktop vault into a focused LaTeX workspace. It 
 - Complete LaTeX source editing with CodeMirror 6 syntax highlighting
 - `latexmk` and Tectonic backends with safe argument-based process execution
 - Compile command, ribbon action, and debounced compile-on-save
-- Embedded side-by-side PDF preview
+- Overleaf-style side-by-side workspace with a live, reusable PDF preview
+- Optional PDF pane controlled by the editor button or `Toggle PDF preview` command
 - File/line diagnostic parsing and jump to the first compilation error
 - SyncTeX generation for future forward/inverse search support
 
@@ -34,6 +35,8 @@ Copy `main.js`, `manifest.json`, and `styles.css` into:
 ```
 
 Then enable **LaTeX Studio** under Obsidian community plugins and open a `.tex` file in the vault.
+
+Use the panel button in the LaTeX editor toolbar, or run **Toggle PDF preview** from the command palette, to open or close the right-hand PDF pane. When compile-on-save is enabled, editing pauses briefly before recompiling and refreshing that same pane.
 
 ## Security model
 

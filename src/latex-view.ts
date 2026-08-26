@@ -43,6 +43,7 @@ export class LatexEditorView extends TextFileView {
       })
     });
     this.addAction("play", "Compile LaTeX", () => void this.plugin.compileView(this));
+    this.addAction("panel-right-open", "Toggle PDF preview", () => void this.plugin.togglePdfPreview(this));
   }
 
   async onClose(): Promise<void> {

@@ -1,5 +1,5 @@
 import path from "node:path";
-import { FileSystemAdapter, Notice, Plugin, TFile } from "obsidian";
+import { FileSystemAdapter, Notice, Plugin, TFile, type WorkspaceLeaf } from "obsidian";
 import { compileLatex } from "./compiler";
 import { LATEX_VIEW_TYPE, LatexEditorView } from "./latex-view";
 import { PDF_VIEW_TYPE, LatexPdfView } from "./pdf-view";
@@ -9,6 +9,8 @@ import type { CompileResult, LatexStudioSettings } from "./types";
 export default class LatexStudioPlugin extends Plugin {
   settings: LatexStudioSettings = DEFAULT_SETTINGS;
   private compiling = new Set<string>();
+  private latestPdfResourceUrl: string | null = null;
+  private openingPdfLeaf: Promise<WorkspaceLeaf> | null = null;
 
   async onload(): Promise<void> {
     await this.loadSettings();
@@ -27,6 +29,11 @@ export default class LatexStudioPlugin extends Plugin {
         return true;
       }
     });
+    this.addCommand({
+      id: "toggle-pdf-preview",
+      name: "Toggle PDF preview",
+      callback: () => void this.togglePdfPreview()
+    });
   }
 
   async loadSettings(): Promise<void> {
@@ -43,6 +50,23 @@ export default class LatexStudioPlugin extends Plugin {
     const file = view.file;
     if (!file) return;
     await this.compileFile(file, view, quiet);
+  }
+
+  async togglePdfPreview(sourceView?: LatexEditorView): Promise<void> {
+    const existingLeaves = this.app.workspace.getLeavesOfType(PDF_VIEW_TYPE);
+    if (existingLeaves.length > 0) {
+      this.app.workspace.detachLeavesOfType(PDF_VIEW_TYPE);
+      return;
+    }
+
+    const pdfView = await this.getPdfView(true);
+    if (this.latestPdfResourceUrl) {
+      pdfView?.show(this.latestPdfResourceUrl);
+      return;
+    }
+
+    const latexView = sourceView ?? this.app.workspace.getActiveViewOfType(LatexEditorView);
+    if (latexView) await this.compileView(latexView);
   }
 
   private async compileActive(): Promise<void> {
@@ -66,7 +90,7 @@ export default class LatexStudioPlugin extends Plugin {
     if (!quiet) new Notice(`Compiling ${file.name}…`);
     try {
       const result = await compileLatex(adapter.getFullPath(file.path), this.settings);
-      await this.reportResult(result, view, adapter);
+      await this.reportResult(result, view, adapter, quiet);
     } finally {
       this.compiling.delete(file.path);
     }
@@ -75,7 +99,8 @@ export default class LatexStudioPlugin extends Plugin {
   private async reportResult(
     result: CompileResult,
     view: LatexEditorView,
-    adapter: FileSystemAdapter
+    adapter: FileSystemAdapter,
+    quiet: boolean
   ): Promise<void> {
     if (!result.ok) {
       const firstError = result.diagnostics.find((item) => item.severity === "error");
@@ -85,15 +110,33 @@ export default class LatexStudioPlugin extends Plugin {
       return;
     }
 
-    new Notice(`Compiled with ${result.engine} in ${(result.durationMs / 1000).toFixed(1)}s`);
-    if (!this.settings.openPdfAfterCompile) return;
+    if (!quiet) new Notice(`Compiled with ${result.engine} in ${(result.durationMs / 1000).toFixed(1)}s`);
     const relativePdfPath = path.relative(adapter.getBasePath(), result.pdfPath).split(path.sep).join("/");
     await this.app.vault.adapter.exists(relativePdfPath);
-    const resourceUrl = this.app.vault.adapter.getResourcePath(relativePdfPath);
-    const leaf = this.app.workspace.getLeaf("split", "vertical");
-    await leaf.setViewState({ type: PDF_VIEW_TYPE, active: true });
-    const pdfView = leaf.view;
-    if (pdfView instanceof LatexPdfView) pdfView.show(resourceUrl);
+    this.latestPdfResourceUrl = this.app.vault.adapter.getResourcePath(relativePdfPath);
+    const hasOpenPreview = this.app.workspace.getLeavesOfType(PDF_VIEW_TYPE).length > 0;
+    if (!this.settings.openPdfAfterCompile && !hasOpenPreview) return;
+    const pdfView = await this.getPdfView(true);
+    pdfView?.show(this.latestPdfResourceUrl);
+  }
+
+  private async getPdfView(create: boolean): Promise<LatexPdfView | null> {
+    const existingLeaf = this.app.workspace.getLeavesOfType(PDF_VIEW_TYPE)[0];
+    if (existingLeaf?.view instanceof LatexPdfView) return existingLeaf.view;
+    if (!create) return null;
+
+    if (!this.openingPdfLeaf) {
+      this.openingPdfLeaf = (async () => {
+        const leaf = this.app.workspace.getLeaf("split", "vertical");
+        await leaf.setViewState({ type: PDF_VIEW_TYPE, active: true });
+        return leaf;
+      })().finally(() => {
+        this.openingPdfLeaf = null;
+      });
+    }
+
+    const leaf = await this.openingPdfLeaf;
+    return leaf.view instanceof LatexPdfView ? leaf.view : null;
   }
 }
 
