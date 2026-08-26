@@ -2,22 +2,24 @@ import path from "node:path";
 import { FileSystemAdapter, Notice, Plugin, TFile, type WorkspaceLeaf } from "obsidian";
 import { compileLatex } from "./compiler";
 import { LATEX_VIEW_TYPE, LatexEditorView } from "./latex-view";
-import { PDF_VIEW_TYPE, LatexPdfView } from "./pdf-view";
 import { DEFAULT_SETTINGS, LatexStudioSettingTab } from "./settings";
 import type { CompileResult, LatexStudioSettings } from "./types";
 
 export default class LatexStudioPlugin extends Plugin {
   settings: LatexStudioSettings = DEFAULT_SETTINGS;
   private compiling = new Set<string>();
-  private latestPdfResourceUrl: string | null = null;
+  private latestPdfPath: string | null = null;
+  private pdfLeaf: WorkspaceLeaf | null = null;
   private openingPdfLeaf: Promise<WorkspaceLeaf> | null = null;
+  private statusEl: HTMLElement | null = null;
 
   async onload(): Promise<void> {
     await this.loadSettings();
     this.registerView(LATEX_VIEW_TYPE, (leaf) => new LatexEditorView(leaf, this));
-    this.registerView(PDF_VIEW_TYPE, (leaf) => new LatexPdfView(leaf));
     this.registerExtensions(["tex", "sty", "cls"], LATEX_VIEW_TYPE);
     this.addSettingTab(new LatexStudioSettingTab(this.app, this));
+    this.statusEl = this.addStatusBarItem();
+    this.setStatus("LaTeX ready");
     this.addRibbonIcon("sigma", "Compile active LaTeX document", () => void this.compileActive());
     this.addCommand({
       id: "compile-active-latex-document",
@@ -53,15 +55,14 @@ export default class LatexStudioPlugin extends Plugin {
   }
 
   async togglePdfPreview(sourceView?: LatexEditorView): Promise<void> {
-    const existingLeaves = this.app.workspace.getLeavesOfType(PDF_VIEW_TYPE);
-    if (existingLeaves.length > 0) {
-      this.app.workspace.detachLeavesOfType(PDF_VIEW_TYPE);
+    if (this.pdfLeaf) {
+      this.pdfLeaf.detach();
+      this.pdfLeaf = null;
       return;
     }
 
-    const pdfView = await this.getPdfView(true);
-    if (this.latestPdfResourceUrl) {
-      pdfView?.show(this.latestPdfResourceUrl);
+    if (this.latestPdfPath) {
+      await this.openPdf(this.latestPdfPath);
       return;
     }
 
@@ -79,7 +80,10 @@ export default class LatexStudioPlugin extends Plugin {
   }
 
   private async compileFile(file: TFile, view: LatexEditorView, quiet: boolean): Promise<void> {
-    if (this.compiling.has(file.path)) return;
+    if (this.compiling.has(file.path)) {
+      if (!quiet) new Notice(`${file.name} is already compiling.`);
+      return;
+    }
     const adapter = this.app.vault.adapter;
     if (!(adapter instanceof FileSystemAdapter)) {
       new Notice("LaTeX Studio requires a desktop filesystem vault.");
@@ -87,6 +91,7 @@ export default class LatexStudioPlugin extends Plugin {
     }
 
     this.compiling.add(file.path);
+    this.setStatus(`Compiling ${file.name}…`);
     if (!quiet) new Notice(`Compiling ${file.name}…`);
     try {
       const result = await compileLatex(adapter.getFullPath(file.path), this.settings);
@@ -106,37 +111,49 @@ export default class LatexStudioPlugin extends Plugin {
       const firstError = result.diagnostics.find((item) => item.severity === "error");
       if (firstError?.line) view.focusLine(firstError.line);
       new Notice(firstError?.message ?? "LaTeX compilation failed.", 8000);
+      this.setStatus("LaTeX compile failed");
       console.error("LaTeX Studio compilation failed", result.log);
       return;
     }
 
     if (!quiet) new Notice(`Compiled with ${result.engine} in ${(result.durationMs / 1000).toFixed(1)}s`);
     const relativePdfPath = path.relative(adapter.getBasePath(), result.pdfPath).split(path.sep).join("/");
-    await this.app.vault.adapter.exists(relativePdfPath);
-    this.latestPdfResourceUrl = this.app.vault.adapter.getResourcePath(relativePdfPath);
-    const hasOpenPreview = this.app.workspace.getLeavesOfType(PDF_VIEW_TYPE).length > 0;
-    if (!this.settings.openPdfAfterCompile && !hasOpenPreview) return;
-    const pdfView = await this.getPdfView(true);
-    pdfView?.show(this.latestPdfResourceUrl);
+    this.latestPdfPath = relativePdfPath;
+    this.setStatus(`Compiled in ${(result.durationMs / 1000).toFixed(1)}s`);
+    if (!this.settings.openPdfAfterCompile && !this.pdfLeaf) return;
+    await this.openPdf(relativePdfPath);
   }
 
-  private async getPdfView(create: boolean): Promise<LatexPdfView | null> {
-    const existingLeaf = this.app.workspace.getLeavesOfType(PDF_VIEW_TYPE)[0];
-    if (existingLeaf?.view instanceof LatexPdfView) return existingLeaf.view;
-    if (!create) return null;
-
+  private async openPdf(relativePdfPath: string): Promise<void> {
+    const pdfFile = await this.waitForPdf(relativePdfPath);
+    if (!pdfFile) {
+      new Notice("PDF was compiled, but Obsidian has not indexed it yet. Try Toggle PDF preview again.");
+      return;
+    }
     if (!this.openingPdfLeaf) {
       this.openingPdfLeaf = (async () => {
-        const leaf = this.app.workspace.getLeaf("split", "vertical");
-        await leaf.setViewState({ type: PDF_VIEW_TYPE, active: true });
+        const leaf = this.pdfLeaf ?? this.app.workspace.getLeaf("split", "vertical");
+        await leaf.openFile(pdfFile, { active: true });
         return leaf;
       })().finally(() => {
         this.openingPdfLeaf = null;
       });
     }
 
-    const leaf = await this.openingPdfLeaf;
-    return leaf.view instanceof LatexPdfView ? leaf.view : null;
+    this.pdfLeaf = await this.openingPdfLeaf;
+  }
+
+  private async waitForPdf(relativePdfPath: string): Promise<TFile | null> {
+    for (let attempt = 0; attempt < 15; attempt += 1) {
+      const file = this.app.vault.getFileByPath(relativePdfPath);
+      if (file) return file;
+      await new Promise((resolve) => window.setTimeout(resolve, 100));
+    }
+    return null;
+  }
+
+  private setStatus(text: string): void {
+    this.statusEl?.setText(text);
   }
 }
 

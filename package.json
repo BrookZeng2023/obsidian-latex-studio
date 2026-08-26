@@ -1,6 +1,6 @@
 {
   "name": "obsidian-latex-studio",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "A complete LaTeX project editor and PDF preview for Obsidian.",
   "type": "module",
   "scripts": {

@@ -1,4 +1,5 @@
 import { execFile, type ExecFileException } from "node:child_process";
+import { copyFile, mkdir } from "node:fs/promises";
 import path from "node:path";
 import { parseDiagnostics } from "./diagnostics";
 import type { CompileResult, EngineKind, LatexStudioSettings } from "./types";
@@ -29,13 +30,18 @@ export async function compileLatex(
   const startedAt = Date.now();
   const workingDirectory = path.dirname(absoluteTexPath);
   const fileName = path.basename(absoluteTexPath);
-  const pdfPath = path.join(workingDirectory, `${path.parse(fileName).name}.pdf`);
-  const candidates = commandCandidates(fileName, settings);
+  const baseName = path.parse(fileName).name;
+  const buildDirectory = path.join(workingDirectory, ".latex-studio", baseName);
+  const builtPdfPath = path.join(buildDirectory, `${baseName}.pdf`);
+  const pdfPath = path.join(workingDirectory, `${baseName}.pdf`);
+  await mkdir(buildDirectory, { recursive: true });
+  const candidates = commandCandidates(fileName, buildDirectory, settings);
   let lastFailure: unknown;
 
   for (const command of candidates) {
     try {
       const { stdout, stderr } = await runCompiler(command, workingDirectory);
+      await copyFile(builtPdfPath, pdfPath);
       const log = `${stdout}\n${stderr}`.trim();
       return {
         ok: true,
@@ -56,16 +62,27 @@ export async function compileLatex(
   return failureResult("tectonic", pdfPath, lastFailure, startedAt);
 }
 
-function commandCandidates(fileName: string, settings: LatexStudioSettings): CommandSpec[] {
+function commandCandidates(
+  fileName: string,
+  buildDirectory: string,
+  settings: LatexStudioSettings
+): CommandSpec[] {
   const latexmk: CommandSpec = {
     engine: "latexmk",
     executable: settings.latexmkPath || "latexmk",
-    args: ["-pdf", "-interaction=nonstopmode", "-file-line-error", "-synctex=1", fileName]
+    args: [
+      "-pdf",
+      "-interaction=nonstopmode",
+      "-file-line-error",
+      "-synctex=1",
+      `-outdir=${buildDirectory}`,
+      fileName
+    ]
   };
   const tectonic: CommandSpec = {
     engine: "tectonic",
     executable: settings.tectonicPath || "tectonic",
-    args: ["--synctex", "--keep-logs", "--keep-intermediates", fileName]
+    args: ["--synctex", "--keep-logs", "--keep-intermediates", "--outdir", buildDirectory, fileName]
   };
 
   if (settings.engine === "latexmk") return [latexmk];

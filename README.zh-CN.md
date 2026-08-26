@@ -64,7 +64,7 @@ npm run check
 
 ### 外部文件与进程访问披露
 
-这个桌面端插件会启动 Obsidian vault 外部安装的 `latexmk` 或 Tectonic。本地编译器以 LaTeX 源文件所在的 vault 目录为工作目录，并在其中写入 PDF、日志、辅助文件和 SyncTeX 文件。插件自身没有遥测、账户要求、广告或远程服务；当宏包尚未缓存时，Tectonic 可能从其配置的宏包服务下载资源。
+这个桌面端插件会启动 Obsidian vault 外部安装的 `latexmk` 或 Tectonic。本地编译器以 LaTeX 源文件所在的 vault 目录为工作目录：可阅读的 PDF 保留在源文件旁边，日志、辅助文件和 SyncTeX 数据统一放进隐藏的 `.latex-studio` 构建目录，不再挤满文件列表。插件自身没有遥测、账户要求、广告或远程服务；当宏包尚未缓存时，Tectonic 可能从其配置的宏包服务下载资源。
 
 ## 开发路线
 
