@@ -65,7 +65,7 @@ export default class LatexStudioPlugin extends Plugin {
     if (!quiet) new Notice(`Compiling ${file.name}…`);
     try {
       const result = await compileLatex(adapter.getFullPath(file.path), this.settings);
-      await this.reportResult(result, file, view, adapter);
+      await this.reportResult(result, view, adapter);
     } finally {
       this.compiling.delete(file.path);
     }
@@ -73,7 +73,6 @@ export default class LatexStudioPlugin extends Plugin {
 
   private async reportResult(
     result: CompileResult,
-    source: TFile,
     view: LatexEditorView,
     adapter: FileSystemAdapter
   ): Promise<void> {
@@ -94,6 +93,5 @@ export default class LatexStudioPlugin extends Plugin {
     await leaf.setViewState({ type: PDF_VIEW_TYPE, active: true });
     const pdfView = leaf.view;
     if (pdfView instanceof LatexPdfView) pdfView.show(resourceUrl);
-    console.info(`LaTeX Studio compiled ${source.path} to ${relativePdfPath}`);
   }
 }

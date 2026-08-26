@@ -39,6 +39,10 @@ Then enable **LaTeX Studio** under Obsidian community plugins and open a `.tex` 
 
 Compilation runs local executables without a shell. LaTeX itself can still read files permitted by the selected engine and template. Only compile projects you trust, and do not enable shell escape unless you understand the consequences.
 
+### External file and process access disclosure
+
+This desktop-only plugin starts the locally installed `latexmk` or Tectonic executable, which is outside the Obsidian vault. Compilation runs with the source document's vault folder as its working directory and writes normal LaTeX outputs there, such as PDF, log, auxiliary, and SyncTeX files. The plugin has no telemetry, account requirement, advertisements, or remote service of its own. Tectonic may download LaTeX packages from its configured bundle service when they are not already cached.
+
 ## License
 
 MIT
