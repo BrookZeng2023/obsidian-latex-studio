@@ -2,7 +2,8 @@ import path from "node:path";
 import { FileSystemAdapter, Notice, Plugin, TFile, type WorkspaceLeaf } from "obsidian";
 import { compileLatex } from "./compiler";
 import { LATEX_VIEW_TYPE, LatexEditorView } from "./latex-view";
-import { DEFAULT_SETTINGS, LatexStudioSettingTab } from "./settings";
+import { LatexStudioSettingTab } from "./settings";
+import { DEFAULT_SETTINGS, sanitizeSettings } from "./settings-data";
 import type { CompileResult, LatexStudioSettings } from "./types";
 
 export default class LatexStudioPlugin extends Plugin {
@@ -111,7 +112,11 @@ export default class LatexStudioPlugin extends Plugin {
     this.setStatus(`Compiling ${file.name}…`);
     if (!quiet) new Notice(`Compiling ${file.name}…`);
     try {
-      const result = await compileLatex(adapter.getFullPath(file.path), this.settings);
+      const result = await compileLatex(
+        adapter.getFullPath(file.path),
+        adapter.getBasePath(),
+        this.settings
+      );
       await this.reportResult(result, view, adapter, quiet);
       if (result.ok) this.lastCompiledSource.set(file.path, source);
     } finally {
@@ -182,33 +187,4 @@ export default class LatexStudioPlugin extends Plugin {
   private setStatus(text: string): void {
     this.statusEl?.setText(text);
   }
-}
-
-function sanitizeSettings(value: unknown): LatexStudioSettings {
-  if (!isRecord(value)) return { ...DEFAULT_SETTINGS };
-
-  const settings = { ...DEFAULT_SETTINGS };
-  if (value.engine === "auto" || value.engine === "latexmk" || value.engine === "tectonic") {
-    settings.engine = value.engine;
-  }
-  if (typeof value.latexmkPath === "string" && value.latexmkPath.trim()) {
-    settings.latexmkPath = value.latexmkPath.trim();
-  }
-  if (typeof value.tectonicPath === "string" && value.tectonicPath.trim()) {
-    settings.tectonicPath = value.tectonicPath.trim();
-  }
-  if (typeof value.compileOnSave === "boolean") {
-    settings.compileOnSave = value.compileOnSave;
-  }
-  if (typeof value.compileDebounceMs === "number" && Number.isFinite(value.compileDebounceMs)) {
-    settings.compileDebounceMs = Math.max(100, Math.min(10_000, value.compileDebounceMs));
-  }
-  if (typeof value.openPdfAfterCompile === "boolean") {
-    settings.openPdfAfterCompile = value.openPdfAfterCompile;
-  }
-  return settings;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }

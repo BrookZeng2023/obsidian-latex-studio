@@ -2,7 +2,12 @@ import { execFile, type ExecFileException } from "node:child_process";
 import { copyFile, mkdir } from "node:fs/promises";
 import path from "node:path";
 import { parseDiagnostics } from "./diagnostics";
-import type { CompileResult, EngineKind, LatexStudioSettings } from "./types";
+import type {
+  BuildFilesLocation,
+  CompileResult,
+  EngineKind,
+  LatexStudioSettings
+} from "./types";
 
 const MAX_LOG_BYTES = 4 * 1024 * 1024;
 
@@ -25,13 +30,18 @@ interface CommandSpec {
 
 export async function compileLatex(
   absoluteTexPath: string,
+  vaultRoot: string,
   settings: LatexStudioSettings
 ): Promise<CompileResult> {
   const startedAt = Date.now();
   const workingDirectory = path.dirname(absoluteTexPath);
   const fileName = path.basename(absoluteTexPath);
   const baseName = path.parse(fileName).name;
-  const buildDirectory = path.join(workingDirectory, ".latex-studio", baseName);
+  const buildDirectory = resolveBuildDirectory(
+    absoluteTexPath,
+    vaultRoot,
+    settings.buildFilesLocation
+  );
   const builtPdfPath = path.join(buildDirectory, `${baseName}.pdf`);
   const pdfPath = path.join(workingDirectory, `${baseName}.pdf`);
   await mkdir(buildDirectory, { recursive: true });
@@ -60,6 +70,29 @@ export async function compileLatex(
   }
 
   return failureResult("tectonic", pdfPath, lastFailure, startedAt);
+}
+
+export function resolveBuildDirectory(
+  absoluteTexPath: string,
+  vaultRoot: string,
+  location: BuildFilesLocation
+): string {
+  const workingDirectory = path.dirname(absoluteTexPath);
+  const baseName = path.parse(absoluteTexPath).name;
+
+  if (location === "source-folder") {
+    return path.join(workingDirectory, ".latex-studio", baseName);
+  }
+
+  const relativeSourceDirectory = path.relative(vaultRoot, workingDirectory);
+  const sourceIsOutsideVault = relativeSourceDirectory === ".."
+    || relativeSourceDirectory.startsWith(`..${path.sep}`)
+    || path.isAbsolute(relativeSourceDirectory);
+  if (sourceIsOutsideVault) {
+    throw new Error("LaTeX source must be inside the Obsidian vault.");
+  }
+
+  return path.join(vaultRoot, ".latex-studio", relativeSourceDirectory, baseName);
 }
 
 function commandCandidates(
