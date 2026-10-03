@@ -13,6 +13,7 @@ LaTeX Studio turns an Obsidian desktop vault into a focused LaTeX workspace. It 
 - Optional PDF pane controlled by the editor button or `Toggle PDF preview` command
 - File/line diagnostic parsing and jump to the first compilation error
 - SyncTeX generation for future forward/inverse search support
+- Configurable build files location: inside each source folder or in one vault-level directory
 
 ## Requirements
 
@@ -40,13 +41,15 @@ Use the panel button in the LaTeX editor toolbar, or run **Toggle PDF preview** 
 
 Live preview waits until typing stops, skips unchanged sources, and coalesces edits made during a running build into one follow-up compile. The native PDF pane stays open so its page and zoom state are not reset unnecessarily. Manual **Compile** always requests a fresh full build.
 
+Use **Build files location** in the plugin settings to keep each document's intermediate files inside its source folder or collect them under `<vault>/.latex-studio`. The vault-level layout mirrors source paths to prevent collisions between documents with the same name. Finished PDFs always remain beside their source files.
+
 ## Security model
 
 Compilation runs local executables without a shell. LaTeX itself can still read files permitted by the selected engine and template. Only compile projects you trust, and do not enable shell escape unless you understand the consequences.
 
 ### External file and process access disclosure
 
-This desktop-only plugin starts the locally installed `latexmk` or Tectonic executable, which is outside the Obsidian vault. Compilation runs with the source document's vault folder as its working directory. The readable PDF stays beside the source, while logs, auxiliary files, and SyncTeX data are kept under a hidden `.latex-studio` build folder. The plugin has no telemetry, account requirement, advertisements, or remote service of its own. Tectonic may download LaTeX packages from its configured bundle service when they are not already cached.
+This desktop-only plugin starts the locally installed `latexmk` or Tectonic executable, which is outside the Obsidian vault. Compilation runs with the source document's vault folder as its working directory. The readable PDF stays beside the source, while logs, auxiliary files, and SyncTeX data are kept under a hidden `.latex-studio` build folder inside the source folder or at the vault root, according to the plugin setting. The plugin has no telemetry, account requirement, advertisements, or remote service of its own. Tectonic may download LaTeX packages from its configured bundle service when they are not already cached.
 
 ## License
 

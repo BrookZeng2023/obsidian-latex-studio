@@ -1,15 +1,9 @@
 import { App, PluginSettingTab, Setting, type SettingDefinitionItem } from "obsidian";
 import type LatexStudioPlugin from "./main";
 import type { LatexStudioSettings } from "./types";
+import { DEFAULT_SETTINGS } from "./settings-data";
 
-export const DEFAULT_SETTINGS: LatexStudioSettings = {
-  engine: "auto",
-  latexmkPath: "latexmk",
-  tectonicPath: "tectonic",
-  compileOnSave: true,
-  compileDebounceMs: 2500,
-  openPdfAfterCompile: true
-};
+export { DEFAULT_SETTINGS } from "./settings-data";
 
 export class LatexStudioSettingTab extends PluginSettingTab {
   constructor(app: App, private readonly plugin: LatexStudioPlugin) {
@@ -33,6 +27,20 @@ export class LatexStudioSettingTab extends PluginSettingTab {
 
     this.addTextSetting("latexmk executable", "latexmkPath", "latexmk");
     this.addTextSetting("Tectonic executable", "tectonicPath", "tectonic");
+
+    new Setting(containerEl)
+      .setName("Build files location")
+      .setDesc("Choose where logs, auxiliary files, and SyncTeX data are stored. Compiled PDFs remain next to their source files.")
+      .addDropdown((dropdown) => dropdown
+        .addOptions({
+          "source-folder": "Per source folder",
+          "vault-root": "Vault root"
+        })
+        .setValue(this.plugin.settings.buildFilesLocation)
+        .onChange(async (value) => {
+          this.plugin.settings.buildFilesLocation = value as LatexStudioSettings["buildFilesLocation"];
+          await this.plugin.saveSettings();
+        }));
 
     new Setting(containerEl)
       .setName("Compile on save")
@@ -99,6 +107,19 @@ export class LatexStudioSettingTab extends PluginSettingTab {
         }
       },
       {
+        name: "Build files location",
+        desc: "Choose where logs, auxiliary files, and SyncTeX data are stored. Compiled PDFs remain next to their source files.",
+        control: {
+          type: "dropdown",
+          key: "buildFilesLocation",
+          options: {
+            "source-folder": "Per source folder",
+            "vault-root": "Vault root"
+          },
+          defaultValue: DEFAULT_SETTINGS.buildFilesLocation
+        }
+      },
+      {
         name: "Compile on save",
         desc: "Waits until typing stops, then compiles only when the source changed.",
         control: {
@@ -141,6 +162,9 @@ export class LatexStudioSettingTab extends PluginSettingTab {
 
     if (key === "engine" && (value === "auto" || value === "latexmk" || value === "tectonic")) {
       this.plugin.settings.engine = value;
+    } else if (key === "buildFilesLocation"
+      && (value === "source-folder" || value === "vault-root")) {
+      this.plugin.settings.buildFilesLocation = value;
     } else if ((key === "latexmkPath" || key === "tectonicPath") && typeof value === "string") {
       this.plugin.settings[key] = value.trim() || DEFAULT_SETTINGS[key];
     } else if (key === "compileDebounceMs" && typeof value === "number" && Number.isFinite(value)) {

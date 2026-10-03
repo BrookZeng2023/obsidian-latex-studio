@@ -1,9 +1,11 @@
 export type EngineKind = "auto" | "latexmk" | "tectonic";
+export type BuildFilesLocation = "source-folder" | "vault-root";
 
 export interface LatexStudioSettings {
   engine: EngineKind;
   latexmkPath: string;
   tectonicPath: string;
+  buildFilesLocation: BuildFilesLocation;
   compileOnSave: boolean;
   compileDebounceMs: number;
   openPdfAfterCompile: boolean;

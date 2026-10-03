@@ -13,6 +13,7 @@ LaTeX Studio 把 Obsidian 桌面版变成一个轻量 LaTeX 工作环境。它�
 - 可通过编辑器按钮或“Toggle PDF preview”命令随时打开、关闭右侧 PDF
 - 解析编译错误并跳转到第一个错误行
 - 生成 SyncTeX 文件，为后续正向和反向定位预留基础
+- 可将构建文件保存在各源码目录内，或统一放进 vault 根目录下的构建目录
 
 ## 系统要求
 
@@ -49,6 +50,7 @@ LaTeX Studio 把 Obsidian 桌面版变成一个轻量 LaTeX 工作环境。它�
 - 编辑器工具栏中的分栏按钮可以打开或关闭右侧 PDF；启用自动编译时，停止输入片刻后会重新编译并刷新同一预览。
 - 实时预览默认等待停止输入 2.5 秒；未改变的源码会直接跳过，编译期间发生的多次编辑只合并为下一次编译。手动点击 Compile 始终执行一次完整构建。
 - 可以在插件设置中选择 `Auto`、`latexmk` 或 `Tectonic`，也可以填写编译器绝对路径。
+- “Build files location”可选择每个源码目录各自的 `.latex-studio`，或 vault 根目录下统一的 `.latex-studio`。根目录模式会保留源码的相对路径，避免同名文档互相覆盖；最终 PDF 始终保留在源码旁边。
 
 ## 本地开发
 
@@ -65,7 +67,7 @@ npm run check
 
 ### 外部文件与进程访问披露
 
-这个桌面端插件会启动 Obsidian vault 外部安装的 `latexmk` 或 Tectonic。本地编译器以 LaTeX 源文件所在的 vault 目录为工作目录：可阅读的 PDF 保留在源文件旁边，日志、辅助文件和 SyncTeX 数据统一放进隐藏的 `.latex-studio` 构建目录，不再挤满文件列表。插件自身没有遥测、账户要求、广告或远程服务；当宏包尚未缓存时，Tectonic 可能从其配置的宏包服务下载资源。
+这个桌面端插件会启动 Obsidian vault 外部安装的 `latexmk` 或 Tectonic。本地编译器以 LaTeX 源文件所在的 vault 目录为工作目录：可阅读的 PDF 保留在源文件旁边，日志、辅助文件和 SyncTeX 数据按设置放进源码目录内或 vault 根目录下隐藏的 `.latex-studio` 构建目录，不再挤满文件列表。插件自身没有遥测、账户要求、广告或远程服务；当宏包尚未缓存时，Tectonic 可能从其配置的宏包服务下载资源。
 
 ## 开发路线
 
