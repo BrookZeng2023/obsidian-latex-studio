@@ -1,8 +1,9 @@
 import { StreamLanguage } from "@codemirror/language";
 import { stex } from "@codemirror/legacy-modes/mode/stex";
-import { EditorState } from "@codemirror/state";
+import { openSearchPanel } from "@codemirror/search";
+import { EditorState, Transaction } from "@codemirror/state";
 import { EditorView, basicSetup } from "codemirror";
-import { TextFileView, WorkspaceLeaf } from "obsidian";
+import { Scope, TextFileView, WorkspaceLeaf } from "obsidian";
 import type LatexStudioPlugin from "./main";
 
 export const LATEX_VIEW_TYPE = "latex-studio-editor";
@@ -42,6 +43,12 @@ export class LatexEditorView extends TextFileView {
         ]
       })
     });
+    // Obsidian's global Mod+F ("Search current file") swallows the key outside markdown views.
+    this.scope = new Scope(this.app.scope);
+    this.scope.register(["Mod"], "f", () => {
+      if (this.editor) openSearchPanel(this.editor);
+      return false;
+    });
     this.addAction("play", "Compile LaTeX", () => void this.plugin.compileView(this));
     this.addAction("panel-right-open", "Toggle PDF preview", () => void this.plugin.togglePdfPreview(this));
   }
@@ -62,14 +69,20 @@ export class LatexEditorView extends TextFileView {
     if (!this.editor) return;
     const current = this.editor.state.doc.toString();
     if (clear || current !== data) {
-      this.editor.dispatch({ changes: { from: 0, to: current.length, insert: data } });
+      this.editor.dispatch({
+        changes: { from: 0, to: current.length, insert: data },
+        annotations: Transaction.addToHistory.of(false)
+      });
     }
   }
 
   clear(): void {
     this.loadedText = "";
     if (this.editor) {
-      this.editor.dispatch({ changes: { from: 0, to: this.editor.state.doc.length, insert: "" } });
+      this.editor.dispatch({
+        changes: { from: 0, to: this.editor.state.doc.length, insert: "" },
+        annotations: Transaction.addToHistory.of(false)
+      });
     }
   }
 
