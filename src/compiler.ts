@@ -25,7 +25,8 @@ interface CommandSpec {
 
 export async function compileLatex(
   absoluteTexPath: string,
-  settings: LatexStudioSettings
+  settings: LatexStudioSettings,
+  vaultRoot: string
 ): Promise<CompileResult> {
   const startedAt = Date.now();
   const workingDirectory = path.dirname(absoluteTexPath);
@@ -35,7 +36,7 @@ export async function compileLatex(
   const builtPdfPath = path.join(buildDirectory, `${baseName}.pdf`);
   const pdfPath = path.join(workingDirectory, `${baseName}.pdf`);
   await mkdir(buildDirectory, { recursive: true });
-  const candidates = commandCandidates(fileName, buildDirectory, settings);
+  const candidates = commandCandidates(fileName, buildDirectory, settings, vaultRoot);
   let lastFailure: unknown;
 
   for (const command of candidates) {
@@ -65,11 +66,12 @@ export async function compileLatex(
 function commandCandidates(
   fileName: string,
   buildDirectory: string,
-  settings: LatexStudioSettings
+  settings: LatexStudioSettings,
+  vaultRoot: string
 ): CommandSpec[] {
   const latexmk: CommandSpec = {
     engine: "latexmk",
-    executable: settings.latexmkPath || "latexmk",
+    executable: resolveExecutable(settings.latexmkPath || "latexmk", vaultRoot),
     args: [
       "-pdf",
       "-interaction=nonstopmode",
@@ -81,13 +83,18 @@ function commandCandidates(
   };
   const tectonic: CommandSpec = {
     engine: "tectonic",
-    executable: settings.tectonicPath || "tectonic",
+    executable: resolveExecutable(settings.tectonicPath || "tectonic", vaultRoot),
     args: ["--synctex", "--keep-logs", "--keep-intermediates", "--outdir", buildDirectory, fileName]
   };
 
   if (settings.engine === "latexmk") return [latexmk];
   if (settings.engine === "tectonic") return [tectonic];
   return [latexmk, tectonic];
+}
+
+function resolveExecutable(executable: string, vaultRoot: string): string {
+  if (path.isAbsolute(executable) || (!executable.includes(path.sep) && !executable.includes("/"))) return executable;
+  return path.resolve(vaultRoot, executable);
 }
 
 function isMissingExecutable(error: unknown): boolean {

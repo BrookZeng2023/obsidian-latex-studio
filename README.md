@@ -21,6 +21,8 @@ LaTeX Studio turns an Obsidian desktop vault into a focused LaTeX workspace. It 
   - `latexmk` from TeX Live, MacTeX, or MiKTeX; or
   - [Tectonic](https://tectonic-typesetting.github.io/)
 
+You can also set either compiler executable in the plugin settings to an absolute path or a vault-relative path with a directory separator, such as `.obsidian/latexmk-lualatex`. Bare names, such as `latexmk`, are looked up on `PATH`.
+
 ## Development
 
 ```bash
@@ -46,7 +48,7 @@ Compilation runs local executables without a shell. LaTeX itself can still read 
 
 ### External file and process access disclosure
 
-This desktop-only plugin starts the locally installed `latexmk` or Tectonic executable, which is outside the Obsidian vault. Compilation runs with the source document's vault folder as its working directory. The readable PDF stays beside the source, while logs, auxiliary files, and SyncTeX data are kept under a hidden `.latex-studio` build folder. The plugin has no telemetry, account requirement, advertisements, or remote service of its own. Tectonic may download LaTeX packages from its configured bundle service when they are not already cached.
+This desktop-only plugin starts the configured `latexmk` or Tectonic executable. It can be a command on `PATH`, an absolute path, or a vault-relative path with a directory separator. Compilation runs with the source document's vault folder as its working directory. The readable PDF stays beside the source, while logs, auxiliary files, and SyncTeX data are kept under a hidden `.latex-studio` build folder. The plugin has no telemetry, account requirement, advertisements, or remote service of its own. Tectonic may download LaTeX packages from its configured bundle service when they are not already cached.
 
 ## License
 
