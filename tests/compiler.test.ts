@@ -131,7 +131,7 @@ describe.sequential("compileLatex compiler executable paths", () => {
     const binDirectory = path.join(scenario.vaultRoot, "bin");
     await createCompilerExecutable(path.join(binDirectory, "tectonic"), "path-default-tectonic");
     const originalPath = process.env.PATH;
-    process.env.PATH = `${binDirectory}${path.delimiter}${originalPath ?? ""}`;
+    process.env.PATH = binDirectory;
 
     try {
       // #when
@@ -184,7 +184,6 @@ while [ "$#" -gt 0 ]; do
   esac
   shift
 done
-mkdir -p "$output_directory"
 printf 'PDF:${identity}' > "$output_directory/document.pdf"
 printf '${identity}|cwd=%s|argv=%s\\n' "$PWD" "$arguments"
 `, "utf8");
