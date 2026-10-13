@@ -80,7 +80,7 @@ export class LatexStudioSettingTab extends PluginSettingTab {
       },
       {
         name: "latexmk executable",
-        desc: "Use a command on PATH or an absolute executable path.",
+        desc: "Use a command on PATH, an absolute path, or a vault-relative path with a separator.",
         control: {
           type: "text",
           key: "latexmkPath",
@@ -90,7 +90,7 @@ export class LatexStudioSettingTab extends PluginSettingTab {
       },
       {
         name: "Tectonic executable",
-        desc: "Use a command on PATH or an absolute executable path.",
+        desc: "Use a command on PATH, an absolute path, or a vault-relative path with a separator.",
         control: {
           type: "text",
           key: "tectonicPath",
@@ -161,7 +161,7 @@ export class LatexStudioSettingTab extends PluginSettingTab {
   ): void {
     new Setting(this.containerEl)
       .setName(name)
-      .setDesc("Use a command on PATH or an absolute executable path.")
+      .setDesc("Use a command on PATH, an absolute path, or a vault-relative path with a separator.")
       .addText((text) => text
         .setPlaceholder(placeholder)
         .setValue(this.plugin.settings[key])

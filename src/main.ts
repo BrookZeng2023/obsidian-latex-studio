@@ -111,7 +111,7 @@ export default class LatexStudioPlugin extends Plugin {
     this.setStatus(`Compiling ${file.name}…`);
     if (!quiet) new Notice(`Compiling ${file.name}…`);
     try {
-      const result = await compileLatex(adapter.getFullPath(file.path), this.settings);
+      const result = await compileLatex(adapter.getFullPath(file.path), this.settings, adapter.getBasePath());
       await this.reportResult(result, view, adapter, quiet);
       if (result.ok) this.lastCompiledSource.set(file.path, source);
     } finally {
