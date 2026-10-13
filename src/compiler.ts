@@ -93,7 +93,7 @@ function commandCandidates(
 }
 
 function resolveExecutable(executable: string, vaultRoot: string): string {
-  if (path.isAbsolute(executable) || !executable.includes(path.sep)) return executable;
+  if (path.isAbsolute(executable) || (!executable.includes(path.sep) && !executable.includes("/"))) return executable;
   return path.resolve(vaultRoot, executable);
 }
 
