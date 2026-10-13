@@ -203,7 +203,7 @@ async function compileAndObserve(
       pdfPath: result.pdfPath,
       log: result.log
     },
-    pdf: await readFile(path.join(scenario.documentDirectory, "document.pdf"), "utf8")
+    pdf: await readFile(path.join(scenario.documentDirectory, "document.pdf"), "utf8").catch(() => "missing PDF")
   };
 }
 
